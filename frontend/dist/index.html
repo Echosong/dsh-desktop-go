@@ -14,6 +14,11 @@
       --bg: #ffffff;
       --err: #d93025;
       --err-soft: rgba(217, 48, 37, 0.1);
+      --warn: #b45309;
+      --warn-soft: rgba(180, 83, 9, 0.1);
+      --ok: #16a34a;
+      --panel: #fafbfc;
+      --mono: Consolas, "Cascadia Mono", Menlo, monospace;
     }
 
     * { box-sizing: border-box; }
@@ -28,14 +33,17 @@
       user-select: none;
     }
 
+    .view { display: none; height: 100%; width: 100%; }
+    .view.on { display: flex; }
+
+    /* ------------------------------------------------------------ 启动页 */
+
     .wrap {
       height: 100%;
-      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 40px 28px;
-      gap: 0;
     }
 
     .logo {
@@ -84,7 +92,7 @@
     }
 
     .dot.err { background: var(--err); animation: none; }
-    .dot.ok { background: #16a34a; animation: none; }
+    .dot.ok { background: var(--ok); animation: none; }
 
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
@@ -120,6 +128,8 @@
       display: flex;
       gap: 10px;
       margin-top: 22px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     button {
@@ -134,9 +144,10 @@
       transition: all .16s ease;
     }
 
-    button:hover { border-color: var(--brand); color: var(--brand); }
+    button:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+    button:disabled { opacity: .42; cursor: default; }
     button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
-    button.primary:hover { filter: brightness(1.08); color: #fff; }
+    button.primary:hover:not(:disabled) { filter: brightness(1.08); color: #fff; }
 
     .log {
       margin: 26px 0 0;
@@ -147,9 +158,9 @@
       padding: 12px 14px;
       border: 1px solid var(--line);
       border-radius: 10px;
-      background: #fafbfc;
+      background: var(--panel);
       color: var(--text-dim);
-      font-family: Consolas, "Cascadia Mono", Menlo, monospace;
+      font-family: var(--mono);
       font-size: 11.5px;
       line-height: 1.7;
       white-space: pre-wrap;
@@ -159,10 +170,255 @@
     }
 
     .log:empty { display: none; }
+
+    /* -------------------------------------------------------------- 向导 */
+
+    .wz { flex-direction: column; }
+
+    .wz-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 24px 14px;
+      border-bottom: 1px solid var(--line);
+      flex: none;
+    }
+
+    .wz-head img { width: 40px; height: 40px; border-radius: 11px; }
+    .wz-head h1 { margin: 0; font-size: 16px; }
+    .wz-head .sub { margin: 0; font-size: 12.5px; }
+
+    .wz-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 224px minmax(0, 1fr);
+      min-height: 0;
+    }
+
+    .wz-steps {
+      list-style: none;
+      margin: 0;
+      padding: 16px 12px 16px 20px;
+      border-right: 1px solid var(--line);
+      overflow: auto;
+    }
+
+    .wz-step {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 9px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 2px;
+    }
+
+    .wz-step:hover { background: var(--panel); }
+    .wz-step.cur { background: var(--brand-soft); }
+
+    .wz-idx {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      color: var(--text-dim);
+      font-size: 11.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      margin-top: 1px;
+      background: #fff;
+    }
+
+    .wz-step.cur .wz-idx { border-color: var(--brand); color: var(--brand); }
+    .wz-step.ok .wz-idx { background: var(--ok); border-color: var(--ok); color: #fff; }
+    .wz-step.err .wz-idx { background: var(--err); border-color: var(--err); color: #fff; }
+    .wz-step.warn .wz-idx { background: var(--warn); border-color: var(--warn); color: #fff; }
+
+    .wz-meta { min-width: 0; flex: 1; }
+    .wz-meta b { display: block; font-size: 13px; font-weight: 500; }
+    .wz-step:not(.ok):not(.err):not(.warn) .wz-meta b { color: var(--text-dim); font-weight: 400; }
+    .wz-meta i {
+      display: block;
+      font-style: normal;
+      font-size: 11.5px;
+      color: var(--text-dim);
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .wz-panel { padding: 18px 26px 22px; overflow: auto; min-width: 0; }
+    .wz-panel h2 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+    .wz-panel .note { margin: 0 0 16px; font-size: 12.5px; color: var(--text-dim); line-height: 1.6; }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .card:hover { border-color: #c6d2ea; }
+    .card.sel { border-color: var(--brand); background: var(--brand-soft); }
+    .card.dead { opacity: .7; }
+
+    .card-top { display: flex; align-items: center; gap: 8px; }
+    .card-top .p {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .card-top .tag { margin-left: auto; font-size: 11.5px; flex: none; color: var(--brand); }
+    .card-sub { margin: 5px 0 0 24px; font-size: 11.5px; color: var(--text-dim); line-height: 1.5; }
+
+    .ico {
+      width: 16px; height: 16px; border-radius: 50%; flex: none;
+      font-size: 10.5px; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ico.ok { background: var(--ok); }
+    .ico.warn { background: var(--warn); }
+    .ico.err { background: var(--err); }
+
+    .links { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+    .links a { font-size: 12px; color: var(--brand); text-decoration: underline; cursor: pointer; }
+    .links a.off { color: var(--text-dim); text-decoration: none; cursor: default; }
+
+    .port-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .port-row input {
+      font: inherit;
+      font-size: 14px;
+      width: 128px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-family: var(--mono);
+    }
+    .port-row input:focus { outline: none; border-color: var(--brand); }
+    .port-row input:disabled { background: var(--panel); color: var(--text-dim); }
+
+    .kicker { font-size: 12.5px; line-height: 1.6; margin: 0 0 4px; }
+    .kicker.ok { color: var(--ok); }
+    .kicker.err { color: var(--err); }
+    .kicker.dim { color: var(--text-dim); }
+
+    .kv { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 7px 12px; font-size: 12.5px; margin: 0; }
+    .kv dt { color: var(--text-dim); }
+    .kv dd {
+      margin: 0;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      word-break: break-all;
+      user-select: text;
+    }
+
+    .alert {
+      border: 1px solid var(--err);
+      background: var(--err-soft);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 14px;
+    }
+    .alert.warn { border-color: var(--warn); background: var(--warn-soft); }
+    .alert .t { font-size: 12.5px; font-weight: 500; margin: 0 0 3px; }
+    .alert .h { font-size: 12px; margin: 0; color: var(--text-dim); line-height: 1.6; }
+    .alert pre {
+      margin: 8px 0 0;
+      padding: 8px 10px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      user-select: text;
+      max-height: 92px;
+      overflow: auto;
+    }
+
+    .prog { margin-top: 14px; }
+    .prog .bar { max-width: none; height: 4px; }
+    .prog .bar-inner { animation: none; width: 0; transition: width .25s ease; }
+    .prog .bar.indet .bar-inner { width: 34%; animation: slide 1.4s ease-in-out infinite; }
+    .prog .lbl { display: flex; font-size: 11.5px; color: var(--text-dim); margin-top: 7px; gap: 12px; }
+    .prog .lbl span:first-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+      font-family: var(--mono);
+    }
+    .prog .lbl span:last-child { margin-left: auto; flex: none; }
+
+    .wz-foot {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 24px;
+      border-top: 1px solid var(--line);
+      background: var(--panel);
+      flex: none;
+    }
+
+    .wz-foot .hint {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--text-dim);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 42%;
+    }
+
+    .wz-log {
+      margin: 0;
+      max-height: 100px;
+      max-width: none;
+      border: none;
+      border-top: 1px solid var(--line);
+      border-radius: 0;
+      background: var(--panel);
+      flex: none;
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <!-- -------------------------------------------------------------- 向导 -->
+  <div class="view wz" id="view-wizard">
+    <div class="wz-head">
+      <img src="logo.png" alt="DeepSeek" />
+      <div>
+        <h1>环境配置</h1>
+        <p class="sub">首次运行需要检测运行环境，只需配置一次</p>
+      </div>
+    </div>
+
+    <div class="wz-body">
+      <ol class="wz-steps" id="wzSteps"></ol>
+      <section class="wz-panel" id="wzPanel"></section>
+    </div>
+
+    <div class="wz-foot">
+      <button id="wzPrev" onclick="goPrev()">上一步</button>
+      <span class="hint" id="wzHint"></span>
+      <button id="wzGhost" onclick="onGhost()"></button>
+      <button class="primary" id="wzNext" onclick="onPrimary()">下一步</button>
+    </div>
+
+    <pre class="log wz-log" id="wzLog"></pre>
+  </div>
+
+  <!-- ------------------------------------------------------------ 启动页 -->
+  <div class="view wrap" id="view-splash">
     <img class="logo" src="logo.png" alt="DeepSeek" />
     <h1>DeepSeek Harness</h1>
     <p class="sub">桌面客户端 · dsh web</p>
@@ -177,6 +433,7 @@
     <div class="actions" id="actions" style="display:none">
       <button class="primary" onclick="retry()">重试</button>
       <button onclick="openBrowser()">在浏览器中打开</button>
+      <button onclick="reopenSetup()">重新配置环境</button>
     </div>
 
     <pre class="log" id="log"></pre>
@@ -186,21 +443,92 @@
   <script src="/wails/runtime.js"></script>
   <script>
     const el = (id) => document.getElementById(id);
+    const SPLASH = el('view-splash');
+    const WIZARD = el('view-wizard');
     const bar = el('bar');
     const dot = el('dot');
     const statusText = el('statusText');
     const logBox = el('log');
+    const wzLog = el('wzLog');
     const actions = el('actions');
 
+    let snap = null;
+    let step = 1;
+    let progress = null;
+    let manualCmd = '';
+    let cmdCopied = false;
+    let portTimer = null;   // 端口输入的防抖计时器，必须放在外层，否则重渲染会丢
+
+    /* -------------------------------------------------------------- 通用 */
+
+    const clean = (s) => String(s == null ? '' : s).replace(/\u001b\[[0-9;]*m/g, '');
+
     function appendLog(line) {
-      // 去掉 ANSI 颜色码
-      const clean = String(line).replace(/\x1b\[[0-9;]*m/g, '');
-      logBox.textContent += clean + '\n';
-      logBox.scrollTop = logBox.scrollHeight;
+      const box = WIZARD.classList.contains('on') ? wzLog : logBox;
+      box.textContent += clean(line) + '\n';
+      box.scrollTop = box.scrollHeight;
     }
 
-    function apply(status) {
+    function showView(name) {
+      WIZARD.classList.toggle('on', name === 'wizard');
+      SPLASH.classList.toggle('on', name === 'splash');
+    }
+
+    async function call(name, ...args) {
+      try {
+        return await window.go.main.App[name](...args);
+      } catch (e) {
+        return { ok: false, err: { code: 'E_CALL', message: '调用 ' + name + ' 失败', hint: String(e) } };
+      }
+    }
+
+    // 后端所有向导方法都返回 OpResult，这里统一吸收快照与错误。
+    async function applyOp(promise) {
+      let r = null;
+      try { r = await promise; } catch (e) { r = null; }
+      if (r && r.snapshot) snap = r.snapshot;
+      if (r && !r.ok && r.err && snap) snap.err = r.err;
+      render();
+      return r;
+    }
+
+    function copyText(text) {
+      if (!text) return;
+      const done = () => {
+        cmdCopied = true;
+        render();
+        setTimeout(() => { cmdCopied = false; render(); }, 1600);
+      };
+      try {
+        navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+      } catch (e) {
+        fallbackCopy(text, done);
+      }
+    }
+
+    function fallbackCopy(text, done) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'absolute';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+
+    /* ------------------------------------------------------------ 启动页 */
+
+    function applyStatus(status) {
       if (!status) return;
+
+      if (status.state === 'setup') {
+        showView('wizard');
+        statusText.textContent = status.message || '';
+        return;
+      }
+
+      showView('splash');
       statusText.textContent = status.message || '';
 
       if (status.state === 'ready') {
@@ -220,13 +548,13 @@
     }
 
     function retry() {
-      el('log').textContent = '';
+      logBox.textContent = '';
       actions.style.display = 'none';
       statusText.textContent = '正在重启 dsh web …';
       bar.className = 'bar';
       dot.className = 'dot';
       try {
-        window.go.main.App.RestartDSH().then(apply).catch(() => {});
+        window.go.main.App.RestartDSH().then(applyStatus).catch(() => {});
       } catch (e) {
         location.reload();
       }
@@ -236,12 +564,504 @@
       try { window.go.main.App.OpenInBrowser(); } catch (e) {}
     }
 
-    function boot() {
+    function reopenSetup() {
+      applyOp(call('ResetSetup')).then(() => { step = 1; render(); });
+    }
+
+    /* -------------------------------------------------------------- 向导 */
+
+    const steps = () => (snap && snap.steps) || [];
+    const stepOf = (n) => steps().find((s) => s.step === n) || { state: 'pending' };
+    const isReady = (n) => { const s = stepOf(n).state; return s === 'ok' || s === 'done'; };
+    const busy = () => !!(snap && snap.busy);
+
+    function stepClass(state) {
+      if (state === 'ok' || state === 'done') return 'ok';
+      if (state === 'error') return 'err';
+      if (state === 'missing') return 'warn';
+      return '';
+    }
+
+    function stepSubtitle(s) {
+      if (s.state === 'checking') return '检测中 …';
+      if (s.state === 'installing') return '安装中 …';
+      if (s.state === 'ok' || s.state === 'done') return '已完成';
+      return s.message || '待检测';
+    }
+
+    function renderSteps() {
+      const list = el('wzSteps');
+      list.innerHTML = '';
+      steps().forEach((s) => {
+        const cls = stepClass(s.state);
+        const li = document.createElement('li');
+        li.className = 'wz-step ' + cls + (step === s.step ? ' cur' : '');
+        li.onclick = () => { step = s.step; render(); };
+
+        const idx = document.createElement('span');
+        idx.className = 'wz-idx';
+        idx.textContent = cls === 'ok' ? '✓' : String(s.step);
+
+        const meta = document.createElement('span');
+        meta.className = 'wz-meta';
+        const b = document.createElement('b');
+        b.textContent = s.title || ('步骤 ' + s.step);
+        const i = document.createElement('i');
+        i.textContent = stepSubtitle(s);
+        meta.appendChild(b);
+        meta.appendChild(i);
+
+        li.appendChild(idx);
+        li.appendChild(meta);
+        list.appendChild(li);
+      });
+    }
+
+    function card(icoText, icoCls, title, sub, selected, dead, onclick) {
+      const d = document.createElement('div');
+      d.className = 'card' + (selected ? ' sel' : '') + (dead ? ' dead' : '');
+      if (onclick) d.onclick = onclick;
+
+      const top = document.createElement('div');
+      top.className = 'card-top';
+
+      const ic = document.createElement('span');
+      ic.className = 'ico ' + icoCls;
+      ic.textContent = icoText;
+
+      const p = document.createElement('span');
+      p.className = 'p';
+      p.textContent = title;
+      p.title = title;
+
+      top.appendChild(ic);
+      top.appendChild(p);
+      if (selected) {
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = '已选用';
+        top.appendChild(tag);
+      }
+      d.appendChild(top);
+
+      if (sub) {
+        const sp = document.createElement('p');
+        sp.className = 'card-sub';
+        sp.textContent = sub;
+        d.appendChild(sp);
+      }
+      return d;
+    }
+
+    function linkRow(items) {
+      const box = document.createElement('div');
+      box.className = 'links';
+      items.forEach((it) => {
+        const a = document.createElement('a');
+        a.textContent = it.label;
+        if (it.off) a.className = 'off';
+        else a.onclick = it.fn;
+        box.appendChild(a);
+      });
+      return box;
+    }
+
+    function alertBlock(e) {
+      const box = document.createElement('div');
+      box.className = 'alert' + (e.code === 'E_PORT_IN_USE' ? ' warn' : '');
+
+      const t = document.createElement('p');
+      t.className = 't';
+      t.textContent = e.message || '出错了';
+      box.appendChild(t);
+
+      if (e.hint) {
+        const h = document.createElement('p');
+        h.className = 'h';
+        h.textContent = e.hint;
+        box.appendChild(h);
+      }
+
+      if (e.cmd) {
+        const pre = document.createElement('pre');
+        pre.textContent = e.cmd;
+        box.appendChild(pre);
+        box.appendChild(linkRow([{
+          label: cmdCopied ? '已复制到剪贴板' : '复制命令',
+          fn: () => copyText(e.cmd),
+        }]));
+      }
+      return box;
+    }
+
+    const phaseText = (p) => ({
+      download: '正在下载 …', verify: '正在校验 …',
+      extract: '正在解压 …', npm: '正在安装 …', done: '已完成',
+    }[p] || '处理中 …');
+
+    function fmtBytes(n) {
+      if (!n || n < 0) return '—';
+      const units = ['B', 'KB', 'MB', 'GB'];
+      let v = n, i = 0;
+      while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+      return (i === 0 ? v : v.toFixed(1)) + ' ' + units[i];
+    }
+
+    function progressBlock() {
+      const p = progress || {};
+      const known = p.percent != null && p.percent >= 0;
+
+      const box = document.createElement('div');
+      box.className = 'prog';
+
+      const barEl = document.createElement('div');
+      barEl.className = 'bar' + (known ? '' : ' indet');
+      const inner = document.createElement('div');
+      inner.className = 'bar-inner';
+      if (known) inner.style.width = Math.round(p.percent) + '%';
+      barEl.appendChild(inner);
+
+      const lbl = document.createElement('div');
+      lbl.className = 'lbl';
+      const left = document.createElement('span');
+      left.textContent = p.note || phaseText(p.phase);
+      left.title = left.textContent;
+      const right = document.createElement('span');
+      right.textContent = known
+        ? fmtBytes(p.received) + ' / ' + fmtBytes(p.total) + ' · ' + Math.round(p.percent) + '%'
+        : '';
+      lbl.appendChild(left);
+      lbl.appendChild(right);
+
+      box.appendChild(barEl);
+      box.appendChild(lbl);
+      return box;
+    }
+
+    function panelNode() {
+      const box = document.createElement('div');
+      const h = document.createElement('h2');
+      h.textContent = '检测 Node';
+      const note = document.createElement('p');
+      note.className = 'note';
+      note.textContent = 'dsh 需要 Node 22.14 或更高 —— 它依赖 import.meta.main，低于这个版本命令会零输出静默退出。';
+      box.appendChild(h);
+      box.appendChild(note);
+
+      const choices = (snap && snap.nodeChoices) || [];
+      const cur = snap && snap.node;
+
+      if (!choices.length) {
+        const p = document.createElement('p');
+        p.className = 'kicker dim';
+        p.textContent = '没有在 PATH 或常见安装目录里发现 node.exe。可以点「自动安装 Node」装一个便携版，或手动指定已有的。';
+        box.appendChild(p);
+      }
+
+      choices.forEach((n, i) => {
+        const sub = (n.version ? 'v' + n.version : '未知版本')
+          + ' · ' + (n.ok ? '运行时探针通过' : n.reason)
+          + (n.npmCli ? '' : ' · 未附带 npm');
+        box.appendChild(card(
+          n.ok ? '✓' : '✕', n.ok ? 'ok' : 'err',
+          n.path, sub,
+          !!(cur && cur.path === n.path), !n.ok,
+          () => applyOp(call('UseNode', i))
+        ));
+      });
+
+      box.appendChild(linkRow([
+        { label: '手动指定 node.exe', fn: () => applyOp(call('PickNodeFile')) },
+        { label: manualCmd ? '复制手动安装命令' : '复制手动安装命令', off: !manualCmd, fn: () => copyText(manualCmd) },
+      ]));
+
+      if (busy()) box.appendChild(progressBlock());
+      return box;
+    }
+
+    function panelDsh() {
+      const box = document.createElement('div');
+      const h = document.createElement('h2');
+      h.textContent = '检测 dsh';
+      const note = document.createElement('p');
+      note.className = 'note';
+      note.textContent = '检测会实际执行一次 dsh --version —— 文件存在但跑不起来的情况很常见，只有真跑一次才能发现。';
+      box.appendChild(h);
+      box.appendChild(note);
+
+      const choices = (snap && snap.dshChoices) || [];
+      const cur = snap && snap.dsh;
+
+      if (!choices.length) {
+        const p = document.createElement('p');
+        p.className = 'kicker dim';
+        p.textContent = '没有在 PATH、各 npm 前缀或应用目录里发现 dsh。可以点「自动安装 dsh」，它会装到与你所选 Node 匹配的位置。';
+        box.appendChild(p);
+      }
+
+      choices.forEach((d, i) => {
+        const sub = (d.version ? 'v' + d.version : '未知版本')
+          + ' · ' + d.source
+          + (d.ok ? '' : ' · ' + d.reason);
+        box.appendChild(card(
+          d.ok ? '✓' : '✕', d.ok ? 'ok' : 'err',
+          d.bin, sub,
+          !!(cur && cur.bin === d.bin), !d.ok,
+          () => applyOp(call('UseDsh', i))
+        ));
+      });
+
+      box.appendChild(linkRow([
+        { label: '手动指定 dsh 入口', fn: () => applyOp(call('PickDshFile')) },
+        { label: '复制手动安装命令', off: !manualCmd, fn: () => copyText(manualCmd) },
+      ]));
+
+      if (busy()) box.appendChild(progressBlock());
+      return box;
+    }
+
+    function panelPort() {
+      const box = document.createElement('div');
+      const h = document.createElement('h2');
+      h.textContent = '确认端口';
+      const note = document.createElement('p');
+      note.className = 'note';
+      note.textContent = 'dsh web 会监听这个本地端口，窗口里显示的也是它。默认 3388，被占用时换一个即可。';
+      box.appendChild(h);
+      box.appendChild(note);
+
+      const pi = (snap && snap.port) || {};
+      const row = document.createElement('div');
+      row.className = 'port-row';
+
+      const input = document.createElement('input');
+      input.id = 'wzPort';
+      input.type = 'number';
+      input.min = '1024';
+      input.max = '65535';
+      input.value = pi.port || 3388;
+      input.disabled = !!(snap && snap.portFixed);
+
+      input.oninput = () => {
+        clearTimeout(portTimer);
+        const v = parseInt(input.value, 10);
+        if (!v) return;
+        portTimer = setTimeout(() => applyOp(call('CheckPort', v)), 300);
+      };
+
+      const unit = document.createElement('span');
+      unit.className = 'kicker dim';
+      unit.textContent = (snap && snap.portFixed) ? '由环境变量 DSH_WEB_PORT 指定' : '默认 3388';
+
+      row.appendChild(input);
+      row.appendChild(unit);
+      box.appendChild(row);
+
+      const k = document.createElement('p');
+      k.className = 'kicker ' + (pi.free ? 'ok' : (pi.message && pi.message !== '尚未检测' ? 'err' : 'dim'));
+      k.textContent = pi.message || '尚未检测';
+      box.appendChild(k);
+
+      const acts = [{ label: '自动选一个空闲端口', fn: () => applyOp(call('AutoPickPort')) }];
+      if (pi.pid) {
+        acts.push({
+          label: '结束占用该端口的进程（' + (pi.process || '未知') + ' · PID ' + pi.pid + '）',
+          fn: () => applyOp(call('KillPort', pi.port)),
+        });
+      }
+      box.appendChild(linkRow(acts));
+      return box;
+    }
+
+    function panelRun() {
+      const box = document.createElement('div');
+      const h = document.createElement('h2');
+      h.textContent = '启动运行';
+      const note = document.createElement('p');
+      note.className = 'note';
+      note.textContent = '确认下面这套环境，点「启动」后会在本地拉起 dsh web，并把窗口切到它的界面。';
+      box.appendChild(h);
+      box.appendChild(note);
+
+      const node = snap && snap.node;
+      const dsh = snap && snap.dsh;
+      const pi = (snap && snap.port) || {};
+
+      const dl = document.createElement('dl');
+      dl.className = 'kv';
+      const rows = [
+        ['Node', node ? node.path + '   v' + node.version : '未选定'],
+        ['npm 前缀', node && node.prefix ? node.prefix : '—'],
+        ['dsh', dsh ? dsh.bin + '   v' + dsh.version : '未选定'],
+        ['端口', String(pi.port || 3388)],
+      ];
+      rows.forEach((pair) => {
+        const dt = document.createElement('dt');
+        dt.textContent = pair[0];
+        const dd = document.createElement('dd');
+        dd.textContent = pair[1];
+        dl.appendChild(dt);
+        dl.appendChild(dd);
+      });
+      box.appendChild(dl);
+
+      if (!(isReady(1) && isReady(2) && isReady(3))) {
+        const w = document.createElement('div');
+        w.className = 'alert warn';
+        const t = document.createElement('p');
+        t.className = 't';
+        t.textContent = '还有步骤没完成';
+        const hh = document.createElement('p');
+        hh.className = 'h';
+        hh.textContent = '请回到左侧带感叹号的步骤处理完再启动。';
+        w.appendChild(t);
+        w.appendChild(hh);
+        box.appendChild(w);
+      }
+      return box;
+    }
+
+    function renderPanel() {
+      const panel = el('wzPanel');
+
+      // 整块重建会打断正在输入的端口框，先记住焦点再恢复
+      const active = document.activeElement;
+      const keepFocus = !!(active && active.id === 'wzPort');
+
+      panel.innerHTML = '';
+
+      const box = step === 1 ? panelNode()
+        : step === 2 ? panelDsh()
+        : step === 3 ? panelPort()
+        : panelRun();
+
+      const st = stepOf(step);
+      const quiet = st.state === 'ok' || st.state === 'done' || st.state === 'checking' || st.state === 'installing';
+      if (st.message && !quiet) {
+        const a = document.createElement('div');
+        a.className = 'alert warn';
+        const t = document.createElement('p');
+        t.className = 't';
+        t.textContent = st.message;
+        a.appendChild(t);
+        if (st.detail) {
+          const d = document.createElement('p');
+          d.className = 'h';
+          d.textContent = st.detail;
+          a.appendChild(d);
+        }
+        box.appendChild(a);
+      }
+
+      if (snap && snap.err && snap.err.message) {
+        box.appendChild(alertBlock(snap.err));
+      }
+
+      panel.appendChild(box);
+
+      if (keepFocus) {
+        const again = el('wzPort');
+        if (again && !again.disabled) {
+          again.focus();
+          try { again.setSelectionRange(again.value.length, again.value.length); } catch (e) {}
+        }
+      }
+    }
+
+    function renderFoot() {
+      el('wzPrev').disabled = step <= 1 || busy();
+
+      const next = el('wzNext');
+      next.textContent = step >= 4 ? '启动' : '下一步';
+      next.disabled = busy() || !isReady(step);
+
+      const ghost = el('wzGhost');
+      if (busy()) {
+        ghost.textContent = '取消';
+        ghost.onclick = () => applyOp(call('CancelInstall'));
+      } else if (step <= 2 && !isReady(step)) {
+        ghost.textContent = step === 1 ? '自动安装 Node' : '自动安装 dsh';
+        ghost.onclick = () => applyOp(call(step === 1 ? 'InstallNode' : 'InstallDsh'));
+      } else {
+        ghost.textContent = '重新检测';
+        ghost.onclick = () => applyOp(call('RecheckSetup', step));
+      }
+
+      const st = stepOf(step);
+      el('wzHint').textContent = busy()
+        ? '安装进行中，可以随时取消'
+        : (st.state === 'checking' ? '正在检测 …' : (st.message || ''));
+    }
+
+    function render() {
+      if (!snap) return;
+      step = Math.min(4, Math.max(1, step));
+      renderSteps();
+      renderPanel();
+      renderFoot();
+    }
+
+    function goPrev() {
+      if (step > 1 && !busy()) { step--; render(); }
+    }
+
+    function goNext() {
+      if (step >= 4) { onPrimary(); return; }
+      step++;
+      render();
+      // 进入下一步时顺手重检一次，避免展示过期结果
+      applyOp(call('RecheckSetup', step));
+    }
+
+    function onPrimary() {
+      if (step >= 4) {
+        const pi = (snap && snap.port) || {};
+        applyOp(call('FinishSetup', pi.port || 3388));
+        return;
+      }
+      goNext();
+    }
+
+    function onGhost() { el('wzGhost').onclick(); }
+
+    /* -------------------------------------------------------------- 启动 */
+
+    function onStep(s) {
+      if (!snap || !s) return;
+      const list = (snap.steps || []).slice();
+      const i = list.findIndex((x) => x.step === s.step);
+      if (i >= 0) list[i] = s;
+      snap.steps = list;
+      render();
+    }
+
+    function onProgress(p) {
+      progress = p;
+      if (WIZARD.classList.contains('on')) render();
+    }
+
+    async function boot() {
       try {
-        window.runtime.EventsOn('dsh:status', apply);
+        window.runtime.EventsOn('dsh:status', applyStatus);
         window.runtime.EventsOn('dsh:log', appendLog);
-        window.go.main.App.GetLogs().then((lines) => (lines || []).forEach(appendLog));
-        window.go.main.App.GetStatus().then(apply);
+        window.runtime.EventsOn('setup:step', onStep);
+        window.runtime.EventsOn('setup:progress', onProgress);
+        window.runtime.EventsOn('setup:snapshot', (s) => { if (s) { snap = s; render(); } });
+
+        const st = await window.go.main.App.GetStatus();
+        applyStatus(st);
+
+        if (st && st.state === 'setup') {
+          const r = await call('GetSetupSnapshot');
+          if (r && r.snapshot) snap = r.snapshot;
+          manualCmd = await call('ManualCommand');
+          render();
+          // 直接进向导时先自动检测一遍，别让用户面对四个「待检测」
+          applyOp(call('RecheckSetup', 0));
+        }
+
+        const lines = await window.go.main.App.GetLogs();
+        (lines || []).forEach(appendLog);
       } catch (e) {
         statusText.textContent = '初始化失败：' + e;
       }

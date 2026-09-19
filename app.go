@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -16,11 +15,7 @@ import (
 // logFilePath 返回运行日志文件路径：%LOCALAPPDATA%\DSH Desktop\app.log
 // 生产模式下 exe 没有控制台，日志落盘便于排查启动问题。
 func logFilePath() string {
-	dir, err := os.UserCacheDir()
-	if err != nil {
-		dir = os.TempDir()
-	}
-	dir = filepath.Join(dir, "DSH Desktop")
+	dir := dataDir()
 	_ = os.MkdirAll(dir, 0o755)
 	return filepath.Join(dir, "app.log")
 }
@@ -56,6 +51,7 @@ const (
 
 // 应用状态
 const (
+	stateSetup    = "setup" // 首次运行向导
 	stateStarting = "starting"
 	stateReady    = "ready"
 	stateError    = "error"
@@ -86,6 +82,9 @@ type App struct {
 	logs    []string
 	maxLogs int
 
+	cfg   Config
+	setup *setupState
+
 	domReady     chan struct{}
 	domReadyOnce sync.Once
 	quitting     bool
@@ -93,27 +92,31 @@ type App struct {
 
 // NewApp 创建应用实例。
 func NewApp() *App {
-	port := resolvePort()
-	app := &App{maxLogs: 400, domReady: make(chan struct{})}
-	app.runner = newDshRunner(port, func(line string) { app.appendLog("%s", line) })
-	app.webURL = app.runner.RootURL()
-	app.status = Status{
-		State:   stateStarting,
-		Message: "正在启动 dsh web ...",
-		URL:     app.webURL,
-		Port:    port,
-	}
-	return app
-}
+	cfg := LoadConfig()
+	port, _ := cfg.ResolvedPort()
 
-// resolvePort 读取端口配置：环境变量 DSH_WEB_PORT 优先，默认 3388。
-func resolvePort() int {
-	if raw := strings.TrimSpace(os.Getenv("DSH_WEB_PORT")); raw != "" {
-		if p, err := strconv.Atoi(raw); err == nil && p > 0 && p < 65536 {
-			return p
+	app := &App{maxLogs: 400, domReady: make(chan struct{}), cfg: cfg}
+	app.runner = newDshRunner(port, func(line string) { app.appendLog("%s", line) })
+	app.initSetupState()
+	app.webURL = app.runner.RootURL()
+
+	// 已经配置过环境就直接启动；否则先进向导，避免先闪一下启动页再跳走
+	if cfg.SetupCompleted {
+		app.status = Status{
+			State:   stateStarting,
+			Message: "正在启动 dsh web ...",
+			URL:     app.webURL,
+			Port:    port,
+		}
+	} else {
+		app.status = Status{
+			State:   stateSetup,
+			Message: "正在检测运行环境 ...",
+			URL:     app.webURL,
+			Port:    port,
 		}
 	}
-	return defaultPort
+	return app
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -121,7 +124,15 @@ func (a *App) startup(ctx context.Context) {
 	writeFileLog("startup: 应用启动，日志文件 " + logFilePath())
 	a.startTray()
 	go a.heartbeat()
-	go a.bootstrap(false)
+
+	go func() {
+		if a.cfg.SetupCompleted {
+			// 已经配好：直接启动；若 dsh 已不在原位，启动失败时会给出一键重跑的入口
+			a.bootstrap(false)
+			return
+		}
+		a.enterSetup()
+	}()
 }
 
 // onDomReady 标记启动页已就绪，导航必须等它之后才能注入。

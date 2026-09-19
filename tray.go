@@ -33,6 +33,8 @@ func (a *App) onTrayReady() {
 	mReload := systray.AddMenuItem("重新加载页面", "")
 	mRestart := systray.AddMenuItem("重启 dsh web", "")
 	systray.AddSeparator()
+	mSetup := systray.AddMenuItem("环境设置…", "重新检测并配置运行环境（会结束当前 dsh 会话）")
+	systray.AddSeparator()
 	mQuit := systray.AddMenuItem("退出", "退出 DSH Desktop 并结束 dsh 进程")
 
 	// 左键单击托盘图标直接唤回窗口
@@ -42,6 +44,7 @@ func (a *App) onTrayReady() {
 	mOpen.Click(func() { a.trayAction(a.OpenInBrowser) })
 	mReload.Click(func() { a.trayAction(a.Reload) })
 	mRestart.Click(func() { a.trayAction(func() { a.RestartDSH() }) })
+	mSetup.Click(func() { a.trayAction(a.reopenSetup) })
 	mQuit.Click(func() { a.trayAction(a.quitApp) })
 
 	writeFileLog("tray: 系统托盘已就绪")

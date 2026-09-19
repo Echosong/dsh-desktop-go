@@ -42,6 +42,21 @@ type dshLaunch struct {
 	Label string // 仅用于日志展示
 }
 
+// dshInvocation 把「用哪一对 node / 入口」翻译成可执行文件与参数前缀。
+func dshInvocation(node, bin, kind string) (string, []string) {
+	if kind == kindJS {
+		return node, []string{bin}
+	}
+	// Windows 上 .cmd / .bat 必须经由 cmd.exe 执行
+	if runtime.GOOS == "windows" {
+		switch strings.ToLower(filepath.Ext(bin)) {
+		case ".cmd", ".bat":
+			return "cmd.exe", []string{"/c", bin}
+		}
+	}
+	return bin, nil
+}
+
 // dshRunner 负责 dsh web 子进程的生命周期。
 type dshRunner struct {
 	mu      sync.Mutex
@@ -51,7 +66,13 @@ type dshRunner struct {
 	stopped bool
 	onLog   func(string)
 
-	urlCh chan string
+	// 向导选定后固定下来的启动组合。
+	// 显式指定后就不再走 PATH / 各前缀的猜测逻辑，彻底避开「机器上有多个 node」导致的错配。
+	prefNode string
+	prefBin  string
+	prefKind string
+
+	urlCh  chan string
 	exitCh chan error
 }
 
@@ -61,6 +82,35 @@ func newDshRunner(port int, onLog func(string)) *dshRunner {
 		onLog: onLog,
 		urlCh: make(chan string, 4),
 	}
+}
+
+// SetPreferred 指定启动 dsh 时使用的 node 与入口（由向导写入配置后调用）。
+func (r *dshRunner) SetPreferred(node, bin, kind string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.prefNode, r.prefBin, r.prefKind = node, bin, kind
+}
+
+// preferredInvocation 返回已选定的启动组合；未指定或文件已不存在时返回 ok=false。
+func (r *dshRunner) preferredInvocation() (exe string, prefixArgs []string, label string, ok bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.prefBin == "" || !fileExists(r.prefBin) {
+		return "", nil, "", false
+	}
+	if r.prefKind == kindJS && (r.prefNode == "" || !fileExists(r.prefNode)) {
+		return "", nil, "", false
+	}
+	exe, prefixArgs = dshInvocation(r.prefNode, r.prefBin, r.prefKind)
+	return exe, prefixArgs, r.prefNode + " " + r.prefBin, true
+}
+
+// IsRunning 报告本应用启动的 dsh 进程是否还在运行。
+func (r *dshRunner) IsRunning() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return !r.stopped && r.cmd != nil && r.cmd.Process != nil
 }
 
 // Exited 返回子进程退出通知通道（未接管进程时为 nil）。
@@ -156,7 +206,7 @@ func (r *dshRunner) EnsureRunning(timeout time.Duration) (string, error) {
 		return "", fmt.Errorf("端口 %d 已被占用，可能是上次异常退出残留的 dsh web 进程。可点击“强制重启”结束占用进程后重试，或设置环境变量 DSH_WEB_PORT 换一个端口", r.port)
 	}
 
-	launch, err := resolveDshLaunch(r.port)
+	launch, err := r.resolveLaunch()
 	if err != nil {
 		return "", err
 	}
@@ -382,6 +432,23 @@ func listeningPIDs(port int) []int {
 		pids = append(pids, pid)
 	}
 	return pids
+}
+
+// resolveLaunch 决定这次怎么启动 dsh。
+// 向导写入的配置最可信：直接用那一对 node + 入口拼命令，不再去 PATH 里猜。
+func (r *dshRunner) resolveLaunch() (*dshLaunch, error) {
+	dshArgs := []string{"web", "--port", strconv.Itoa(r.port), "--no-open"}
+
+	if exe, prefixArgs, label, ok := r.preferredInvocation(); ok {
+		return &dshLaunch{
+			Exe:   exe,
+			Args:  append(append([]string{}, prefixArgs...), dshArgs...),
+			Label: label,
+		}, nil
+	}
+
+	r.log("未找到已配置的 dsh 组合，尝试自动定位 ...")
+	return resolveDshLaunch(r.port)
 }
 
 // resolveDshLaunch 依次尝试多种方式定位 dsh 命令。
