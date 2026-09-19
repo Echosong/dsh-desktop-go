@@ -1,0 +1,60 @@
+name: Release
+
+# 打 tag（如 v1.0.0）时自动编译 Windows 产物并发布到 Release。
+# 在 Linux runner 上交叉编译到 windows/amd64，比 Windows runner 更快也更省额度。
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+
+      - name: 安装交叉编译工具链
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-mingw-w64-x86-64 zip
+
+      - name: 安装 Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.9.2
+
+      - name: 编译
+        env:
+          CC: x86_64-w64-mingw32-gcc
+        run: |
+          wails build -platform windows/amd64 -clean -skipbindings
+
+      - name: 打包
+        run: |
+          mkdir -p dist
+          cp "build/bin/DSH Desktop.exe" "dist/DSH-Desktop.exe"
+          cd dist && zip -9 DSH-Desktop-windows-amd64.zip DSH-Desktop.exe
+
+      - name: 发布 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/DSH-Desktop-windows-amd64.zip
+            dist/DSH-Desktop.exe
+          generate_release_notes: true
+          body: |
+            ## 安装
+
+            1. 先安装 dsh：`npm i -g @deepseek-ai/dsh`
+            2. 下载下面的 `DSH-Desktop-windows-amd64.zip`，解压后双击运行
+
+            需要 Windows 10/11 与 WebView2 运行时（Win11 及较新的 Win10 已内置）。
+
+            详细说明见 [README](https://github.com/${{ github.repository }}#readme)。

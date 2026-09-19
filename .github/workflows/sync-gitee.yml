@@ -1,0 +1,27 @@
+name: Sync to Gitee
+
+# 把 GitHub 仓库镜像到 Gitee。
+#
+# 使用前需要在本仓库的 Settings → Secrets and variables → Actions 里添加：
+#   GITEE_SSH_PRIVATE_KEY  —— 一个「只用于部署」的私钥
+#   GITEE_USER             —— Gitee 用户名
+#   GITEE_REPO             —— Gitee 仓库名（可留空则取当前仓库名）
+#
+# 对应公钥要加到 Gitee 仓库的「部署公钥」里（勾选允许写入）。
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 镜像到 Gitee
+        uses: wearerequired/git-mirror-action@v1
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.GITEE_SSH_PRIVATE_KEY }}
+        with:
+          source-repo: "git@github.com:${{ github.repository }}.git"
+          destination-repo: "git@gitee.com:${{ secrets.GITEE_USER }}/${{ secrets.GITEE_REPO || github.event.repository.name }}.git"

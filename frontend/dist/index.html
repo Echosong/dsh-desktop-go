@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSH Desktop</title>
+  <style>
+    :root {
+      --brand: #4D6BFE;
+      --brand-soft: rgba(77, 107, 254, 0.12);
+      --text: #1c1f23;
+      --text-dim: #6b7280;
+      --line: #e8eaef;
+      --bg: #ffffff;
+      --err: #d93025;
+      --err-soft: rgba(217, 48, 37, 0.1);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+
+    .wrap {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 28px;
+      gap: 0;
+    }
+
+    .logo {
+      width: 92px;
+      height: 92px;
+      border-radius: 22px;
+      box-shadow: 0 10px 26px rgba(77, 107, 254, 0.24);
+      animation: float 2.6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    h1 {
+      margin: 22px 0 6px;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    .sub {
+      margin: 0 0 26px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 14px;
+      font-size: 13px;
+      color: var(--text-dim);
+      min-height: 20px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--brand);
+      animation: pulse 1.2s ease-in-out infinite;
+      flex: none;
+    }
+
+    .dot.err { background: var(--err); animation: none; }
+    .dot.ok { background: #16a34a; animation: none; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.72); }
+    }
+
+    .bar {
+      width: 100%;
+      max-width: 460px;
+      height: 3px;
+      border-radius: 3px;
+      background: var(--line);
+      overflow: hidden;
+    }
+
+    .bar-inner {
+      height: 100%;
+      width: 30%;
+      border-radius: 3px;
+      background: var(--brand);
+      animation: slide 1.5s ease-in-out infinite;
+    }
+
+    .bar.done .bar-inner { width: 100%; animation: none; }
+    .bar.error .bar-inner { background: var(--err); width: 100%; animation: none; }
+
+    @keyframes slide {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(340%); }
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    button {
+      font: inherit;
+      font-size: 13px;
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      transition: all .16s ease;
+    }
+
+    button:hover { border-color: var(--brand); color: var(--brand); }
+    button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+    button.primary:hover { filter: brightness(1.08); color: #fff; }
+
+    .log {
+      margin: 26px 0 0;
+      width: 100%;
+      max-width: 620px;
+      max-height: 190px;
+      overflow: auto;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fafbfc;
+      color: var(--text-dim);
+      font-family: Consolas, "Cascadia Mono", Menlo, monospace;
+      font-size: 11.5px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-all;
+      user-select: text;
+      scrollbar-width: thin;
+    }
+
+    .log:empty { display: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <img class="logo" src="logo.png" alt="DeepSeek" />
+    <h1>DeepSeek Harness</h1>
+    <p class="sub">桌面客户端 · dsh web</p>
+
+    <div class="status">
+      <span class="dot" id="dot"></span>
+      <span id="statusText">正在准备启动 dsh web …</span>
+    </div>
+
+    <div class="bar" id="bar"><div class="bar-inner"></div></div>
+
+    <div class="actions" id="actions" style="display:none">
+      <button class="primary" onclick="retry()">重试</button>
+      <button onclick="openBrowser()">在浏览器中打开</button>
+    </div>
+
+    <pre class="log" id="log"></pre>
+  </div>
+
+  <script src="/wails/ipc.js"></script>
+  <script src="/wails/runtime.js"></script>
+  <script>
+    const el = (id) => document.getElementById(id);
+    const bar = el('bar');
+    const dot = el('dot');
+    const statusText = el('statusText');
+    const logBox = el('log');
+    const actions = el('actions');
+
+    function appendLog(line) {
+      // 去掉 ANSI 颜色码
+      const clean = String(line).replace(/\x1b\[[0-9;]*m/g, '');
+      logBox.textContent += clean + '\n';
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function apply(status) {
+      if (!status) return;
+      statusText.textContent = status.message || '';
+
+      if (status.state === 'ready') {
+        bar.className = 'bar done';
+        dot.className = 'dot ok';
+        actions.style.display = 'none';
+        // 导航由 Go 侧驱动（必须先落到 dsh 同站再补令牌地址，详见 app.go::navigateToUI）
+        statusText.textContent = '正在打开 Web UI …';
+      } else if (status.state === 'error') {
+        bar.className = 'bar error';
+        dot.className = 'dot err';
+        actions.style.display = 'flex';
+      } else {
+        bar.className = 'bar';
+        dot.className = 'dot';
+      }
+    }
+
+    function retry() {
+      el('log').textContent = '';
+      actions.style.display = 'none';
+      statusText.textContent = '正在重启 dsh web …';
+      bar.className = 'bar';
+      dot.className = 'dot';
+      try {
+        window.go.main.App.RestartDSH().then(apply).catch(() => {});
+      } catch (e) {
+        location.reload();
+      }
+    }
+
+    function openBrowser() {
+      try { window.go.main.App.OpenInBrowser(); } catch (e) {}
+    }
+
+    function boot() {
+      try {
+        window.runtime.EventsOn('dsh:status', apply);
+        window.runtime.EventsOn('dsh:log', appendLog);
+        window.go.main.App.GetLogs().then((lines) => (lines || []).forEach(appendLog));
+        window.go.main.App.GetStatus().then(apply);
+      } catch (e) {
+        statusText.textContent = '初始化失败：' + e;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', boot);
+  </script>
+</body>
+</html>

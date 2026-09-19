@@ -1,0 +1,20 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "dsh-desktop",
+  "outputfilename": "DSH Desktop",
+  "frontend:install": "",
+  "frontend:build": "",
+  "frontend:dev:watcher": "",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "songfeigang",
+    "email": ""
+  },
+  "info": {
+    "companyName": "dsh-desktop",
+    "productName": "DSH Desktop",
+    "productVersion": "1.0.0",
+    "copyright": "",
+    "comments": "DeepSeek Harness desktop shell"
+  }
+}

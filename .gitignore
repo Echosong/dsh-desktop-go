@@ -1,0 +1,34 @@
+# ---- 编译产物 ----
+build/bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# ---- Wails 生成 / 构建中间件 ----
+frontend/wailsjs/
+build/darwin/
+build/linux/
+*.syso
+
+# ---- 运行期产物 ----
+# 应用日志里会包含 dsh 打印的一次性访问令牌（http://127.0.0.1:3388/?token=...），
+# 虽然只在本机有效，也没必要提交
+*.log
+logs/
+
+# ---- 编辑器 / 系统 ----
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ---- 本地覆盖 ----
+.env
+.env.*
+*.local
+
+# ---- Python 缓存 ----
+__pycache__/
+*.pyc
