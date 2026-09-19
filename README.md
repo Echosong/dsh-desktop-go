@@ -1,6 +1,6 @@
 ![DSH Desktop](docs/banner.png)
 
-# DSH Desktop
+# DSH Desktop (Go)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-4D6BFE.svg)](#环境要求)
@@ -11,7 +11,7 @@
 
 不用开终端、不用记命令、不会挂着一个黑窗；关掉窗口只是收进托盘，在托盘右键才真正退出。
 
-[English](README.en.md) · 简体中文
+[English](README.en.md) · 简体中文 · [GitHub](https://github.com/Echosong/dsh-desktop-go) · [Gitee](https://gitee.com/hn-1024_0/dsh-desktop-go)
 
 ---
 
@@ -45,8 +45,8 @@ npm i -g @deepseek-ai/dsh
 也可以从源码编译：
 
 ```bash
-git clone https://github.com/<你>/dsh-desktop
-cd dsh-desktop
+git clone https://github.com/Echosong/dsh-desktop-go
+cd dsh-desktop-go
 wails build -clean
 # 产物：build/bin/DSH Desktop.exe
 ```
@@ -56,7 +56,7 @@ wails build -clean
 ## 目录结构
 
 ```
-dsh-desktop/
+dsh-desktop-go/
 ├── main.go                  Wails 入口：窗口、关闭拦截
 ├── app.go                   应用状态机：启动 / 就绪 / 失败，导航驱动，事件推送
 ├── dsh.go                   dsh 命令定位、子进程管理、端口探测、访问地址解析
@@ -99,7 +99,7 @@ dsh web: http://127.0.0.1:3388/?token=<一次性令牌>
 | `build/bin/*.exe` | 编译产物，已在 `.gitignore` 中排除；要分发请走 Release 附件 |
 | `*.log` | 应用日志含本机会话令牌与本机路径，已排除；`%LOCALAPPDATA%\DSH Desktop\app.log` 在项目外，不要手动拷进来 |
 | 诊断脚本 | 已改为自动探测 dsh / exe / 浏览器，可用 `DSH_BIN`、`DSH_EXE`、`DSH_EDGE`、`DSH_NODE_DIR` 覆盖，脚本内不含本机绝对路径 |
-| 工作区其他目录 | 本仓库应只包含 `dsh-desktop/`。若在上级目录初始化 git，注意 `D:\项目资料\ai实操\.workbuddy\` 里存有开发笔记（含本地数据库等口令）、以及 `ai-flow-agent/` 等无关项目，务必排除 |
+| 工作区其他目录 | 本仓库应只包含 `dsh-desktop-go/`。若在上级目录初始化 git，注意 `D:\项目资料\ai实操\.workbuddy\` 里存有开发笔记（含本地数据库等口令）、以及 `ai-flow-agent/` 等无关项目，务必排除 |
 
 ## 环境要求
 
@@ -124,7 +124,7 @@ build.bat
 
 ```bash
 export PATH="/e/goapp/bin:/e/goproject/bin:/c/Users/Administrator/AppData/Local/Microsoft/WinGet/Packages/BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe/mingw64/bin:$PATH"
-cd dsh-desktop
+cd dsh-desktop-go
 wails build -clean
 ```
 

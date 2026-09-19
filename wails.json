@@ -1,6 +1,6 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "dsh-desktop",
+  "name": "dsh-desktop-go",
   "outputfilename": "DSH Desktop",
   "frontend:install": "",
   "frontend:build": "",
@@ -11,7 +11,7 @@
     "email": ""
   },
   "info": {
-    "companyName": "dsh-desktop",
+    "companyName": "dsh-desktop-go",
     "productName": "DSH Desktop",
     "productVersion": "1.0.0",
     "copyright": "",

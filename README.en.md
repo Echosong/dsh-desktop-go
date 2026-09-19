@@ -1,6 +1,6 @@
 ![DSH Desktop](docs/banner.png)
 
-# DSH Desktop
+# DSH Desktop (Go)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-4D6BFE.svg)](#requirements)
@@ -11,7 +11,7 @@
 
 No terminal, no command to remember, no console window hanging around. Closing the window just tucks it into the system tray; you quit from the tray menu.
 
-[简体中文](README.md) · English
+[简体中文](README.md) · English · [GitHub](https://github.com/Echosong/dsh-desktop-go) · [Gitee](https://gitee.com/hn-1024_0/dsh-desktop-go)
 
 ---
 
@@ -45,8 +45,8 @@ npm i -g @deepseek-ai/dsh
 Building from source:
 
 ```bash
-git clone https://github.com/<you>/dsh-desktop
-cd dsh-desktop
+git clone https://github.com/Echosong/dsh-desktop-go
+cd dsh-desktop-go
 wails build -clean
 # output: build/bin/DSH Desktop.exe
 ```
