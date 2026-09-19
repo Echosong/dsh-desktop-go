@@ -59,6 +59,24 @@ wails build -clean
 
 第一次启动（以及托盘菜单里主动进入「环境设置」）时，应用会先检查运行环境，四步走完再启动：
 
+```mermaid
+flowchart TD
+    A[应用启动] --> B{config.json 已就绪?}
+    B -->|未配置 · 首次运行向导| N1[1 检测 Node<br/>已有安装或便携版下载]
+    B -->|已配置 · 直接启动| S[启动 dsh web<br/>复用现有 bootstrap]
+    N1 --> N2[2 检测 dsh<br/>装入应用私有目录]
+    N2 --> N3[3 确认端口<br/>默认 3388，检测占用]
+    N3 --> N4[4 启动运行<br/>写 config.json 后启动]
+    N4 --> E[打开 Web UI<br/>同站导航 + 令牌注入]
+    S --> E
+    style B fill:#FDF0DC,stroke:#D9A05B
+    style S fill:#EAF6EA,stroke:#82B36D
+    style N1 fill:#EBF1FE,stroke:#4D6BFE
+    style N2 fill:#EBF1FE,stroke:#4D6BFE
+    style N3 fill:#EBF1FE,stroke:#4D6BFE
+    style N4 fill:#EBF1FE,stroke:#4D6BFE
+```
+
 | 步骤 | 做什么 |
 | --- | --- |
 | 1 · 检测 Node | 枚举本机所有 Node（PATH 的每一项 + 常见安装目录 + 各 npm 前缀），逐个跑版本与运行时探针；缺合格的 Node 时可一键下载便携版 |

@@ -59,6 +59,24 @@ wails build -clean
 On first launch — and whenever you pick "环境设置… / Environment settings" from the tray menu — the app checks
 the runtime environment before starting, in four steps:
 
+```mermaid
+flowchart TD
+    A[App starts] --> B{config.json ready?}
+    B -->|Not configured · first-run wizard| N1[1 Detect Node<br/>existing install or portable download]
+    B -->|Configured · direct start| S[Start dsh web<br/>reuse existing bootstrap]
+    N1 --> N2[2 Detect dsh<br/>install into app-private dir]
+    N2 --> N3[3 Confirm port<br/>default 3388, occupancy check]
+    N3 --> N4[4 Launch<br/>write config.json, then start]
+    N4 --> E[Open Web UI<br/>same-site navigation + token]
+    S --> E
+    style B fill:#FDF0DC,stroke:#D9A05B
+    style S fill:#EAF6EA,stroke:#82B36D
+    style N1 fill:#EBF1FE,stroke:#4D6BFE
+    style N2 fill:#EBF1FE,stroke:#4D6BFE
+    style N3 fill:#EBF1FE,stroke:#4D6BFE
+    style N4 fill:#EBF1FE,stroke:#4D6BFE
+```
+
 | Step | What it does |
 | --- | --- |
 | 1 · Detect Node | Enumerates every Node on the machine (every `PATH` entry plus the usual install locations and npm prefixes) and probes each one; offers to download a portable build if none is usable |
