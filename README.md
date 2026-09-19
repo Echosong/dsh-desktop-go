@@ -33,6 +33,8 @@ dsh 用起来要在终端里敲 `dsh web`，然后自己复制它打印的带令
 
 ![界面截图](docs/screenshot.png)
 
+<sub>左侧会话列表已打码处理</sub>
+
 ## 快速开始
 
 ```bash

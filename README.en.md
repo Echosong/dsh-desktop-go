@@ -33,6 +33,8 @@ So this shell does it for you: double-click the icon, it launches dsh, waits unt
 
 ![Screenshot](docs/screenshot.png)
 
+<sub>Sidebar masked for privacy.</sub>
+
 ## Quick start
 
 ```bash
