@@ -51,17 +51,53 @@ def detect_panel_width(img, max_ratio=0.5):
 
 
 def mosaic_panel(img, width):
-    """把左侧 width 像素宽的竖条打上马赛克。"""
+    """把左侧 width 像素宽的竖条整条打上马赛克（备用，默认不用）。"""
     if width <= 0:
         return img, 0
     w, h = img.size
     width = min(width, w)
-    region = img.crop((0, 0, width, h))
-    small = region.resize(
-        (max(1, width // MOSAIC_BLOCK), max(1, h // MOSAIC_BLOCK)), Image.NEAREST
-    )
-    img.paste(small.resize((width, h), Image.NEAREST), (0, 0))
+    mosaic_region(img, 0, 0, width, h)
     return img, width
+
+
+def mosaic_region(img, x0, y0, x1, y1):
+    """对指定矩形打马赛克。"""
+    if x1 <= x0 or y1 <= y0:
+        return
+    region = img.crop((x0, y0, x1, y1))
+    small = region.resize(
+        (max(1, (x1 - x0) // MOSAIC_BLOCK), max(1, (y1 - y0) // MOSAIC_BLOCK)),
+        Image.NEAREST,
+    )
+    img.paste(small.resize((x1 - x0, y1 - y0), Image.NEAREST), (x0, y0))
+
+
+def detect_content_blocks(img, width, bg=(249, 250, 251),
+                          coverage=0.05, min_height=4, pad=4):
+    """找出面板内**确实有内容**的行区间，跳过纯背景的空白。
+
+    整条面板糊掉太粗暴——列表条目之间有大量空白，没必要一起遮挡。
+    这里按行统计「与背景色差异明显的像素占比」，把连续有内容的行合并成块。
+    """
+    xs = list(range(8, max(9, width - 8), 3))
+    h = img.size[1]
+
+    ratios = []
+    for y in range(h):
+        n = sum(1 for x in xs if color_dist(img.getpixel((x, y)), bg) > 45)
+        ratios.append(n / len(xs))
+
+    blocks, start = [], None
+    for y, r in enumerate(ratios):
+        if r > coverage and start is None:
+            start = y
+        elif r <= coverage and start is not None:
+            if y - start >= min_height:
+                blocks.append((max(0, start - pad), min(h - 1, y - 1 + pad)))
+            start = None
+    if start is not None and h - start >= min_height:
+        blocks.append((max(0, start - pad), h - 1))
+    return blocks
 
 
 def find_main_window():
@@ -182,27 +218,52 @@ def main():
         img = capture(hwnd)
 
     # 给左侧面板（会话 / 工作区菜单）打码，避免把个人会话内容发到公开仓库
+    block_count = 0
     if raw:
         print("⚠️ --raw：保留原样输出，含个人信息，请勿直接公开")
         panel_w = 0
     else:
         panel_w = forced_width or detect_panel_width(img)
-        img, panel_w = mosaic_panel(img, panel_w)
+        if "--whole-panel" in args:
+            img, panel_w = mosaic_panel(img, panel_w)
+            block_count = 1
+        else:
+            blocks = detect_content_blocks(img, panel_w)
+            for y0, y1 in blocks:
+                mosaic_region(img, 0, y0, panel_w, y1)
+            block_count = len(blocks)
 
     os.makedirs(os.path.dirname(out), exist_ok=True)
     img.save(out)
 
-    # 简单有效性检查：非纯黑像素占比
+    # 有效性检查：非纯黑像素占比 + 主内容区是否为「已渲染」状态
     small = img.resize((80, 45))
     pixels = list(small.getdata())
     bright = sum(1 for r, g, b in pixels if r + g + b > 90)
     ratio = bright / len(pixels)
     print(f"written: {out} size={img.size} 非黑像素占比={ratio:.2%}")
     if panel_w:
-        print(f"左侧面板已打码：0~{panel_w}px（块大小 {MOSAIC_BLOCK}px）")
+        if block_count > 1:
+            print(f"左侧面板打码：{block_count} 个内容块（空白处保留，块大小 {MOSAIC_BLOCK}px）")
+        else:
+            print(f"左侧面板已打码：0~{panel_w}px（块大小 {MOSAIC_BLOCK}px）")
+
+    # WebView2 在窗口未激活或页面还没画完时会返回整片灰底，
+    # 只看「非黑」是拦不住的，这里额外要求主内容区以浅色为主。
+    right = img.crop((int(img.size[0] * 0.35), 0, img.size[0], img.size[1]))
+    samples = [right.getpixel((x, y))
+               for x in range(0, right.size[0], 37)
+               for y in range(0, right.size[1], 37)]
+    light = sum(1 for r, g, b in samples if r > 235 and g > 235 and b > 235) / len(samples)
+    print(f"主内容区浅色占比={light:.1%}")
+
     if ratio < 0.15:
         print("⚠️ 画面接近全黑，可能是 WebView2 未渲染或窗口被遮挡")
         return 2
+    if light < 0.25:
+        print("⚠️ 主内容区几乎没有浅色像素，界面很可能还没渲染完（整片灰底）。")
+        print("   建议：把窗口切到前台后多等几秒再截，或稍后重试。")
+        return 3
     return 0
 
 
